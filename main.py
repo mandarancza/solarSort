@@ -35,6 +35,13 @@ class SolarSystemApp:
         # Load objects from file or initialize with default data
         self.objects = self.load_objects()
 
+        self.sorting_state = {
+            'name': False,  # Default sorting state
+            'distance': False,
+            'mass': False,
+            'orbital_period': False
+        }
+
         self.tree = ttk.Treeview(root, columns=('Name', 'Distance', 'Mass', 'Orbital Period'), show='headings')
         self.tree.heading('Name', text='Name', command=lambda: self.bucket_sort('name'))
         self.tree.heading('Distance', text='Distance from Sun (AU)', command=lambda: self.bucket_sort('distance'))
@@ -249,29 +256,32 @@ class SolarSystemApp:
             self.update_treeview()
             self.save_objects()
 
+
     def bucket_sort(self, key):
-        key_function = lambda obj: getattr(obj, key)
-        if key == 'name':
-            bucket_count = 26
-            buckets = [[] for _ in range(bucket_count)]
-            for obj in self.objects:
-                index = ord(key_function(obj)[0].upper()) - ord('A')
-                index = max(0, min(index, bucket_count - 1))
-                buckets[index].append(obj)
+        if self.sorting_state[key] == True:
+            self.sorting_state[key] = False
         else:
-            max_value = max(self.objects, key=key_function).distance
-            bucket_count = len(self.objects)
-            buckets = [[] for _ in range(bucket_count)]
-            for obj in self.objects:
-                index = int((key_function(obj) / max_value) * (bucket_count - 1))
-                index = min(index, bucket_count - 1)
-                buckets[index].append(obj)
-
-        self.objects = []
-        for bucket in buckets:
-            self.objects.extend(sorted(bucket, key=key_function))
-
+            self.sorting_state[key] = True
+        
+        self.objects.sort(key=lambda obj: getattr(obj, key), reverse=self.sorting_state[key])
         self.update_treeview()
+        #print(self.tree["columns"].cget("text"))
+        self.update_sorting_icons(key)
+
+
+    def update_sorting_icons(self, sorted_key):
+        # Update the column headers to display the sorting direction
+        for col in self.tree["columns"]:
+            if col.lower() == sorted_key:
+                # Add sorting icon based on current sorting direction
+                if self.sorting_state[sorted_key] == False:
+                    self.tree.heading(col, text=col.capitalize() + ' ↑')
+                else:
+                    self.tree.heading(col, text=col.capitalize() + ' ↓')
+            else:
+                # Remove sorting icon from unsorted columns
+                self.tree.heading(col, text=col.capitalize())
+
 
     def update_treeview(self):
         for i in self.tree.get_children():
