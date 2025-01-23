@@ -1,6 +1,5 @@
 import tkinter as tk
-from tkinter import simpledialog, messagebox
-from tkinter import ttk
+from tkinter import messagebox, ttk
 import json
 import os
 
@@ -12,7 +11,7 @@ class CelestialBody:
         self.orbital_period = orbital_period
 
     def __repr__(self):
-        return f"{self.name} (Distance: {self.distance} AU, Mass: {self.mass} kg, Orbital Period: {self.orbital_period} days)"
+        return f"{self.name} (Distance: {self.distance} AU, Mass: {self.mass} Me, Orbital Period: {self.orbital_period} days)"
 
     def to_dict(self):
         return {
@@ -29,7 +28,8 @@ class CelestialBody:
 class SolarSystemApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Solar System Objects Manager")
+        self.root.title("Solar Sort")
+        self.root.geometry("800x400")
         self.data_file = "celestial_bodies.json"
 
         # Load objects from file or initialize with default data
@@ -42,20 +42,29 @@ class SolarSystemApp:
             'orbital_period': False
         }
 
-        self.tree = ttk.Treeview(root, columns=('Name', 'Distance', 'Mass', 'Orbital Period'), show='headings')
-        self.tree.heading('Name', text='Name', command=lambda: self.bucket_sort('name'))
-        self.tree.heading('Distance', text='Distance from Sun (AU)', command=lambda: self.bucket_sort('distance'))
-        self.tree.heading('Mass', text='Mass (kg)', command=lambda: self.bucket_sort('mass'))
-        self.tree.heading('Orbital Period', text='Orbital Period (days)', command=lambda: self.bucket_sort('orbital_period'))
+        style = ttk.Style()
+        style.configure("Treeview", font=('Helvetica', 10), rowheight=25)
+        style.configure("Treeview.Heading", font=('Helvetica', 11, 'bold'))
+        #style.map("Treeview.Heading", background=[('active', 'green'), ('!active', 'lightblue')])
+
+        self.tree = ttk.Treeview(root, columns=('name', 'distance', 'mass', 'orbital_period'), show='headings')
+        self.tree.heading('name', text='Name', command=lambda: self.bucket_sort('name'))
+        self.tree.heading('distance', text='Distance from Sun (AU)', command=lambda: self.bucket_sort('distance'))
+        self.tree.heading('mass', text='Mass (Me)', command=lambda: self.bucket_sort('mass'))
+        self.tree.heading('orbital_period', text='Orbital Period (days)', command=lambda: self.bucket_sort('orbital_period'))
         self.tree.pack(fill=tk.BOTH, expand=True)
 
-        self.add_button = tk.Button(root, text="Add Object", command=self.add_object)
+
+        style.configure('TButton', font=('Helvetica', 10, 'bold'), padding=5)
+        style.map('TButton', background=[('active', 'lightblue'), ('!active', 'lightgray')])
+
+        self.add_button = ttk.Button(root, text="Add Object", command=self.add_object, style='TButton')
         self.add_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-        self.edit_button = tk.Button(root, text="Edit Object", command=self.edit_object, state=tk.DISABLED)
+        self.edit_button = ttk.Button(root, text="Edit Object", command=self.edit_object, style='TButton')
         self.edit_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-        self.remove_button = tk.Button(root, text="Remove Object", command=self.remove_object, state=tk.DISABLED)
+        self.remove_button = ttk.Button(root, text="Remove Object", command=self.remove_object, style='TButton')
         self.remove_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.tree.bind('<<TreeviewSelect>>', self.on_treeview_select)
@@ -138,7 +147,7 @@ class SolarSystemApp:
         distance_entry = tk.Entry(popup)
         distance_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        tk.Label(popup, text="Mass (kg):").grid(row=2, column=0, padx=5, pady=5)
+        tk.Label(popup, text="Mass (Mw):").grid(row=2, column=0, padx=5, pady=5)
         mass_entry = tk.Entry(popup)
         mass_entry.grid(row=2, column=1, padx=5, pady=5)
 
@@ -146,7 +155,8 @@ class SolarSystemApp:
         period_entry = tk.Entry(popup)
         period_entry.grid(row=3, column=1, padx=5, pady=5)
 
-        tk.Button(popup, text="Submit", command=submit).grid(row=4, column=0, columnspan=2, pady=10)
+        submit_button = ttk.Button(popup, text="Submit", command=submit, style='TButton')
+        submit_button.grid(row=4, column=0, columnspan=2, pady=10)
 
         popup.update_idletasks()
         popup_width = popup.winfo_width()
@@ -209,7 +219,7 @@ class SolarSystemApp:
         distance_entry.grid(row=1, column=1, padx=5, pady=5)
 
         # Mass input
-        tk.Label(popup, text="Mass (kg):").grid(row=2, column=0, padx=5, pady=5)
+        tk.Label(popup, text="Mass (Me):").grid(row=2, column=0, padx=5, pady=5)
         mass_entry = tk.Entry(popup)
         mass_entry.insert(0, str(selected_obj.mass))  # Populate with the current mass
         mass_entry.grid(row=2, column=1, padx=5, pady=5)
@@ -220,8 +230,8 @@ class SolarSystemApp:
         period_entry.insert(0, str(selected_obj.orbital_period))  # Populate with the current orbital period
         period_entry.grid(row=3, column=1, padx=5, pady=5)
 
-        # Submit button
-        tk.Button(popup, text="Submit", command=submit).grid(row=4, column=0, columnspan=2, pady=10)
+        submit_button = ttk.Button(popup, text="Submit", command=submit, style='TButton')
+        submit_button.grid(row=4, column=0, columnspan=2, pady=10)
 
         # Center the popup window
         popup.update_idletasks()  # Update "requested size" from geometry manager
@@ -257,39 +267,111 @@ class SolarSystemApp:
             self.save_objects()
 
 
+    def insertionSort(self, arr, key):
+        for i in range(1, len(arr)):
+            current_obj = arr[i]
+            current_value = getattr(current_obj, key)
+            j = i - 1
+            while j >= 0 and getattr(arr[j], key) > current_value:
+                arr[j + 1] = arr[j]
+                j -= 1
+            arr[j + 1] = current_obj
+        return arr
+
     def bucket_sort(self, key):
-        if self.sorting_state[key] == True:
+    # Przełączanie stanu sortowania dla danego klucza
+        if self.sorting_state[key]:
             self.sorting_state[key] = False
         else:
             self.sorting_state[key] = True
-        
-        self.objects.sort(key=lambda obj: getattr(obj, key), reverse=self.sorting_state[key])
+
+    # Jeśli lista jest pusta, nie wykonujemy dalszych operacji
+        if not self.objects:
+            return
+
+    # BucketSort - inicjalizacja wiader
+        temp = []
+        no_of_buckets = 10
+
+        for i in range(no_of_buckets):
+            temp.append([])
+
+    # Rozdzielanie obiektów do wiader na podstawie ich wartości klucza
+        for obj in self.objects:
+            value = getattr(obj, key)
+
+           
+            # For numerical fields, normalize to a bucket index
+            bucket_index = int(no_of_buckets * value)
+            bucket_index = min(bucket_index, no_of_buckets - 1)  # Aby nie wyjść poza zakres
+            temp[bucket_index].append(obj)
+
+
+
+    # Sortowanie poszczególnych wiader za pomocą insertion sort
+        for i in range(no_of_buckets):
+            temp[i] = self.insertionSort(temp[i], key)
+
+    # Łączenie posortowanych obiektów z wiader bezpośrednio do self.objects
+        k = 0
+        for bucket in temp:
+            for obj in bucket:
+                self.objects[k] = obj
+                k += 1
+
+    # Jeśli sortowanie ma być malejące, odwróć wynik
+        if not self.sorting_state[key]:
+            self.objects.reverse()
+
+    # Aktualizacja widoku Treeview i ikon sortowania
         self.update_treeview()
-        #print(self.tree["columns"].cget("text"))
         self.update_sorting_icons(key)
 
 
     def update_sorting_icons(self, sorted_key):
         # Update the column headers to display the sorting direction
         for col in self.tree["columns"]:
-            if col.lower() == sorted_key:
+            lastchar = self.tree.heading(col, "text")[-1]
+            if lastchar == '↑' or lastchar == '↓':
+                    self.tree.heading(col, text=self.tree.heading(col, "text")[:-2])
+            if col == sorted_key:
                 # Add sorting icon based on current sorting direction
                 if self.sorting_state[sorted_key] == False:
-                    self.tree.heading(col, text=col.capitalize() + ' ↑')
+                    self.tree.heading(col, text=self.tree.heading(col, "text") + ' ↑')
                 else:
-                    self.tree.heading(col, text=col.capitalize() + ' ↓')
-            else:
-                # Remove sorting icon from unsorted columns
-                self.tree.heading(col, text=col.capitalize())
+                    self.tree.heading(col, text=self.tree.heading(col, "text") + ' ↓')
+            
 
+    def column_text(self, heading_name):
+        # Iterate through the columns to find the heading that matches
+        for column in self.tree["columns"]:
+            # Get the text of the heading
+            #heading_val = self.tree.heading(column, )
+            print(self.tree.heading(column))
+            #print(column)
+
+            # Check if it matches the desired heading
+            if column == self:
+                return self.tree.heading(column, "text")  # Return the column ID if found
+        
+        return None
 
     def update_treeview(self):
+        # Clear the treeview
         for i in self.tree.get_children():
             self.tree.delete(i)
-        for obj in self.objects:
-            self.tree.insert('', tk.END, values=(obj.name, obj.distance, obj.mass, obj.orbital_period))
+
+        # Define tags for alternating row colors
+        self.tree.tag_configure('oddrow', background='white')
+        self.tree.tag_configure('evenrow', background='#ebebeb')
+
+        # Insert the objects with alternating row tags
+        for idx, obj in enumerate(self.objects):
+            tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
+            self.tree.insert('', tk.END, values=(obj.name, obj.distance, obj.mass, obj.orbital_period), tags=(tag,))
 
 
 root = tk.Tk()
 app = SolarSystemApp(root)
 root.mainloop()
+
