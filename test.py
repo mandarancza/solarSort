@@ -48,10 +48,10 @@ class SolarSystemApp:
         #style.map("Treeview.Heading", background=[('active', 'green'), ('!active', 'lightblue')])
 
         self.tree = ttk.Treeview(root, columns=('name', 'distance', 'mass', 'orbital_period'), show='headings')
-        self.tree.heading('name', text='Name', command=lambda: self.bucket_sort('name'))
-        self.tree.heading('distance', text='Distance from Sun (AU)', command=lambda: self.bucket_sort('distance'))
-        self.tree.heading('mass', text='Mass (Me)', command=lambda: self.bucket_sort('mass'))
-        self.tree.heading('orbital_period', text='Orbital Period (days)', command=lambda: self.bucket_sort('orbital_period'))
+        self.tree.heading('name', text='Name', command=lambda: self.Sort('name'))
+        self.tree.heading('distance', text='Distance from Sun (AU)', command=lambda: self.Sort('distance'))
+        self.tree.heading('mass', text='Mass (Me)', command=lambda: self.Sort('mass'))
+        self.tree.heading('orbital_period', text='Orbital Period (days)', command=lambda: self.Sort('orbital_period'))
         self.tree.pack(fill=tk.BOTH, expand=True)
 
 
@@ -266,25 +266,48 @@ class SolarSystemApp:
             self.update_treeview()
             self.save_objects()
 
+    def minimum(self, value1, value2):
+        return value1 if value1 < value2 else value2
+        
+    def Sort(self, key): 
+         
+         if self.sorting_state[key] == True:
+            self.sorting_state[key] = False
+         else:
+            self.sorting_state[key] = True
+
+         if key == 'name':
+               # Jeśli lista jest pusta, nie wykonujemy dalszych operacji
+            if not self.objects:
+                return
+            self.objects.sort(key=lambda obj: getattr(obj, key).lower(), reverse=self.sorting_state[key])
+            
+         else:
+            self.bucket_sort(key)
+
+        # Aktualizacja widoku Treeview i ikon sortowania
+
+         self.update_treeview()
+         self.update_sorting_icons(key)
+
 
     def insertionSort(self, arr, key):
         for i in range(1, len(arr)):
             current_obj = arr[i]
             current_value = getattr(current_obj, key)
             j = i - 1
-            while j >= 0 and getattr(arr[j], key) > current_value:
-                arr[j + 1] = arr[j]
-                j -= 1
+            if self.sorting_state[key] == False:
+                while j >= 0 and getattr(arr[j], key) < current_value:
+                    arr[j + 1] = arr[j]
+                    j -= 1
+            else:
+                while j >= 0 and getattr(arr[j], key) > current_value:
+                    arr[j + 1] = arr[j]
+                    j -= 1
             arr[j + 1] = current_obj
         return arr
 
     def bucket_sort(self, key):
-    # Przełączanie stanu sortowania dla danego klucza
-        if self.sorting_state[key]:
-            self.sorting_state[key] = False
-        else:
-            self.sorting_state[key] = True
-
     # Jeśli lista jest pusta, nie wykonujemy dalszych operacji
         if not self.objects:
             return
@@ -298,15 +321,11 @@ class SolarSystemApp:
 
     # Rozdzielanie obiektów do wiader na podstawie ich wartości klucza
         for obj in self.objects:
-            value = getattr(obj, key)
-
-           
+            value = getattr(obj, key)  
             # For numerical fields, normalize to a bucket index
             bucket_index = int(no_of_buckets * value)
-            bucket_index = min(bucket_index, no_of_buckets - 1)  # Aby nie wyjść poza zakres
+            bucket_index = self.minimum(bucket_index, no_of_buckets - 1)  # Aby nie wyjść poza zakres
             temp[bucket_index].append(obj)
-
-
 
     # Sortowanie poszczególnych wiader za pomocą insertion sort
         for i in range(no_of_buckets):
@@ -314,18 +333,16 @@ class SolarSystemApp:
 
     # Łączenie posortowanych obiektów z wiader bezpośrednio do self.objects
         k = 0
-        for bucket in temp:
-            for obj in bucket:
-                self.objects[k] = obj
-                k += 1
-
-    # Jeśli sortowanie ma być malejące, odwróć wynik
-        if not self.sorting_state[key]:
-            self.objects.reverse()
-
-    # Aktualizacja widoku Treeview i ikon sortowania
-        self.update_treeview()
-        self.update_sorting_icons(key)
+        if self.sorting_state[key] == False:
+            for bucket in reversed(temp):
+                 for obj in bucket:
+                    self.objects[k] = obj
+                    k += 1
+        else:  
+            for bucket in temp:
+                for obj in bucket:
+                    self.objects[k] = obj
+                    k += 1
 
 
     def update_sorting_icons(self, sorted_key):
