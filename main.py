@@ -318,7 +318,7 @@ class SolarSystemApp:
         min_value = self.minInArr(self.objects, key)
 
         num_of_buckets = len(self.objects)
-        bucket_range =  (max_value - min_value) if max_value != min_value else 1
+        bucket_range =  (max_value - min_value)/num_of_buckets if max_value != min_value else 1
 
         temp = []
         for i in range(num_of_buckets):
