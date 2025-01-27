@@ -262,22 +262,33 @@ class SolarSystemApp:
             self.update_treeview()
             self.save_objects()
 
-    def minimum(self, value1, value2):
-        return value1 if value1 < value2 else value2
-        
+    def maxInArr(self, arr, key):
+        max_value = getattr(arr[0], key)
+        for obj in arr:
+            if getattr(obj, key) > max_value:
+                max_value = getattr(obj, key)
+        return max_value
+
+    def minInArr(self, arr, key):
+        min_value = getattr(arr[0], key)
+        for obj in arr:
+            if getattr(obj, key) < min_value:
+                min_value = getattr(obj, key)
+        return min_value
+
     def Sort(self, key): 
          
-         if self.sorting_state[key] == True:
-            self.sorting_state[key] = False
-         else:
-            self.sorting_state[key] = True
-
          if key == 'name':
             if not self.objects:
                 return
             self.objects.sort(key=lambda obj: getattr(obj, key).lower(), reverse=self.sorting_state[key])       
          else:
             self.bucket_sort(key)
+
+         if self.sorting_state[key] == True:
+            self.sorting_state[key] = False
+         else:
+            self.sorting_state[key] = True
 
          self.update_treeview()
          self.update_sorting_icons(key)
@@ -303,19 +314,25 @@ class SolarSystemApp:
         if not self.objects:
             return
 
-        temp = []
-        no_of_buckets = 10
+        max_value = self.maxInArr(self.objects, key)
+        min_value = self.minInArr(self.objects, key)
 
-        for i in range(no_of_buckets):
+        num_of_buckets = len(self.objects)
+        bucket_range =  (max_value - min_value) if max_value != min_value else 1
+
+        temp = []
+        for i in range(num_of_buckets):
             temp.append([])
 
         for obj in self.objects:
             value = getattr(obj, key)  
-            bucket_index = int(no_of_buckets * value)
-            bucket_index = self.minimum(bucket_index, no_of_buckets - 1)
+            
+            bucket_index = int((value - min_value) / bucket_range)
+            if bucket_index == num_of_buckets:
+                bucket_index -= 1
             temp[bucket_index].append(obj)
 
-        for i in range(no_of_buckets):
+        for i in range(num_of_buckets):
             temp[i] = self.insertionSort(temp[i], key)
 
         k = 0
@@ -337,7 +354,7 @@ class SolarSystemApp:
             if lastchar == '↑' or lastchar == '↓':
                     self.tree.heading(col, text=self.tree.heading(col, "text")[:-2])
             if col == sorted_key:
-                if self.sorting_state[sorted_key] == True:
+                if self.sorting_state[sorted_key] == False:
                     self.tree.heading(col, text=self.tree.heading(col, "text") + ' ↑')
                 else:
                     self.tree.heading(col, text=self.tree.heading(col, "text") + ' ↓')
